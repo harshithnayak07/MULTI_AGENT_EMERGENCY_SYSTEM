@@ -13,3 +13,9 @@ env/
 .pytest_cache/
 *.log
 .env
+
+# Playwright MCP test artifacts
+.playwright-mcp/
+
+# Root-level test screenshots
+/*.png

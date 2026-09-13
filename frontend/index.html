@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered emergency assistance. Get nearby hospitals, weather conditions and first-aid advice instantly.">
+    <title>AI Emergency Response System</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a class="brand" href="/" aria-label="AI Emergency Response home">
+                    <span class="brand-mark"><i class="fas fa-plus"></i></span>
+                    <span class="brand-text">
+                        <span class="brand-title">AI Emergency Response</span>
+                        <span class="brand-subtitle">Multi-Agent Assistance System</span>
+                    </span>
+                </a>
+                <div class="header-right">
+                    <span class="status-pill"><span class="status-dot"></span> Systems Online</span>
+                    <span class="badge-247"><i class="fas fa-clock"></i> 24/7 Available</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container main-container">
+            <!-- Emergency Input Section -->
+            <section class="input-section" aria-labelledby="assistance-heading">
+                <div class="card input-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fas fa-bed-pulse"></i></div>
+                        <div>
+                            <h2 id="assistance-heading">Emergency Assistance</h2>
+                            <p>Describe your emergency. We'll locate you, find nearby hospitals and give immediate first-aid guidance.</p>
+                        </div>
+                    </div>
+
+                    <div class="input-body">
+                        <label for="emergencyInput" class="input-label">
+                            <i class="fas fa-pen"></i> Describe your emergency
+                        </label>
+
+                        <div class="input-box">
+                            <textarea
+                                id="emergencyInput"
+                                class="emergency-textarea"
+                                placeholder="e.g. I have severe chest pain in Hyderabad, please help"
+                                rows="3"
+                            ></textarea>
+                            <button id="voiceButton" class="mic-button" type="button" title="Speak your emergency" aria-label="Microphone for voice input">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+
+                        <div id="voiceStatus" class="voice-status">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Tap the mic to speak</span>
+                        </div>
+
+                        <p id="voiceTranscript" class="voice-transcript" aria-live="polite"></p>
+
+                        <p class="hint"><i class="fas fa-info-circle"></i> Include a city name (Hyderabad, Bangalore, Delhi, Chennai, Mumbai, Vijayawada) for best results.</p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button id="analyzeButton" class="btn btn-primary btn-large">
+                            <i class="fas fa-shield-heart"></i>
+                            <span>Analyze Emergency</span>
+                        </button>
+                        <button id="clearButton" class="btn btn-ghost" aria-label="Clear form">
+                            <i class="fas fa-rotate-left"></i>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading State -->
+            <section id="loadingSection" class="loading-section hidden" aria-live="polite">
+                <div class="card loading-card">
+                    <div class="progress-track"><span class="progress-bar"></span></div>
+                    <div class="loading-title">
+                        <div class="pulse-cross"><i class="fas fa-heartbeat"></i></div>
+                        <div>
+                            <h3>Analyzing your situation</h3>
+                            <p>Coordinating smart agents to prepare your response…</p>
+                        </div>
+                    </div>
+                    <div class="agent-status">
+                        <div class="agent-item" id="locationAgent">
+                            <span class="agent-icon"><i class="fas fa-location-dot"></i></span>
+                            <span class="agent-name">Location Agent</span>
+                            <span class="status-badge pending">Queued</span>
+                        </div>
+                        <div class="agent-item" id="hospitalAgent">
+                            <span class="agent-icon"><i class="fas fa-hospital"></i></span>
+                            <span class="agent-name">Hospital Agent</span>
+                            <span class="status-badge pending">Queued</span>
+                        </div>
+                        <div class="agent-item" id="weatherAgent">
+                            <span class="agent-icon"><i class="fas fa-cloud-sun"></i></span>
+                            <span class="agent-name">Weather Agent</span>
+                            <span class="status-badge pending">Queued</span>
+                        </div>
+                        <div class="agent-item" id="llmAgent">
+                            <span class="agent-icon"><i class="fas fa-brain"></i></span>
+                            <span class="agent-name">AI Advisor</span>
+                            <span class="status-badge pending">Queued</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="results-section hidden" aria-live="polite">
+                <div class="section-heading">
+                    <div>
+                        <h2>Analysis Results</h2>
+                        <p>Instant response prepared for your location</p>
+                    </div>
+                    <button id="newAnalysisButton" class="btn btn-ghost btn-sm">
+                        <i class="fas fa-plus"></i> New Analysis
+                    </button>
+                </div>
+
+                <!-- Location & Weather -->
+                <div class="results-grid">
+                    <div class="card result-card">
+                        <div class="result-card-inner">
+                            <span class="result-icon"><i class="fas fa-location-dot"></i></span>
+                            <div>
+                                <p class="result-label">Detected Location</p>
+                                <p class="result-value" id="locationResult">--</p>
+                                <p class="result-meta"><i class="fas fa-crosshairs"></i> Identified from your input</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card result-card">
+                        <div class="result-card-inner">
+                            <span class="result-icon temp"><i class="fas fa-temperature-half"></i></span>
+                            <div>
+                                <p class="result-label">Current Weather</p>
+                                <p class="result-value" id="weatherResult">--°C</p>
+                                <p class="result-meta"><i class="fas fa-cloud"></i> Live temperature at location</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hospitals -->
+                <div class="card result-card hospitals-card">
+                    <div class="card-header">
+                        <div class="card-header-icon blue"><i class="fas fa-hospital"></i></div>
+                        <div>
+                            <h3>Nearby Hospitals</h3>
+                            <p>Recommended medical facilities near the emergency location</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <ul class="hospital-list" id="hospitalList">
+                            <li class="placeholder"><i class="fas fa-spinner fa-spin"></i> Loading hospitals…</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Map -->
+                <div class="card result-card map-card">
+                    <div class="card-header">
+                        <div class="card-header-icon green"><i class="fas fa-map-location-dot"></i></div>
+                        <div>
+                            <h3>Emergency Location Map</h3>
+                            <p>Emergency point and nearby hospitals</p>
+                        </div>
+                    </div>
+                    <div class="card-body card-body-flush">
+                        <div id="map" class="map-container"></div>
+                    </div>
+                </div>
+
+                <!-- AI Advice -->
+                <div class="card result-card advice-card">
+                    <div class="card-header">
+                        <div class="card-header-icon purple"><i class="fas fa-user-doctor"></i></div>
+                        <div>
+                            <h3>AI Emergency Advice</h3>
+                            <p>Personalized first-aid steps based on your description</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="adviceResult" class="advice-content">
+                            <div class="placeholder"><i class="fas fa-spinner fa-spin"></i> Preparing advice…</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Actions -->
+                <div class="card result-card emergency-actions">
+                    <div class="card-header">
+                        <div class="card-header-icon red"><i class="fas fa-siren"></i></div>
+                        <div>
+                            <h3>Immediate Actions</h3>
+                            <p>What to do right now in a medical emergency</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="action-tiles">
+                            <div class="action-tile emergency">
+                                <a href="tel:108" class="action-tile-link">
+                                    <span class="action-tile-icon"><i class="fas fa-phone-volume"></i></span>
+                                    <span class="action-tile-text">
+                                        <strong>Call Ambulance: 108</strong>
+                                        <small>Toll-free emergency medical services</small>
+                                    </span>
+                                    <span class="action-tile-arrow"><i class="fas fa-arrow-right"></i></span>
+                                </a>
+                            </div>
+                            <div class="action-tile urgent">
+                                <span class="action-tile-icon"><i class="fas fa-route"></i></span>
+                                <span class="action-tile-text">
+                                    <strong>Go to Nearest Hospital</strong>
+                                    <small>Find the listed hospitals on the map above</small>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section id="errorSection" class="error-section hidden" aria-live="assertive">
+                <div class="card error-card">
+                    <div class="error-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                    <h3>Something went wrong</h3>
+                    <p id="errorMessage">We couldn't complete the analysis. Please try again.</p>
+                    <button id="retryButton" class="btn btn-primary">
+                        <i class="fas fa-rotate-right"></i> Try Again
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo"><i class="fas fa-plus"></i></span>
+                    <span>AI Emergency Response System</span>
+                </div>
+                <p class="disclaimer">
+                    <i class="fas fa-circle-info"></i>
+                    This system provides AI-generated suggestions only. For life-threatening situations, call emergency services immediately.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/static/voice.js"></script>
+    <script src="/static/map.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
